@@ -24,7 +24,8 @@
         "suppressImplicitAnyIndexErrors": false,
         "target": "es2018",
         "declaration": false,
-        "sourceMap": false
+        "sourceMap": false,
+        "useUnknownInCatchVariables": false
     },
     "include": [
         "src/**/*.ts"
