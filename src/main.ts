@@ -9,7 +9,14 @@ import * as input from "./input";
 
 interface Options {
     useCache: boolean;
+    locked: boolean;
     bins?: string[];
+}
+
+interface InstallCachedOptions {
+    bins?: string[];
+    restoreKeys?: string[];
+    locked: boolean;
 }
 
 export async function run(
@@ -20,30 +27,33 @@ export async function run(
     core.info(`Installing ${crate} with cargo`);
     const cargo = await Cargo.get();
     const key = options.useCache ? await getRustKey() : "";
-    const bins = options.bins;
-    await installCached(cargo, crate, bins, version, key);
+    await installCached(cargo, crate, version, key, {
+        bins: options.bins,
+        locked: options.locked,
+    });
 }
 
 async function installCached(
     cargo: Cargo,
     crate: string,
-    bins?: string[],
     version?: string,
     primaryKey?: string,
-    restoreKeys?: string[]
+    options: InstallCachedOptions = { locked: false }
 ): Promise<string> {
     if (version == "latest") {
         version = await resolveVersion(crate);
     }
+    const { bins, restoreKeys, locked } = options;
     if (primaryKey) {
-        restoreKeys = restoreKeys || [];
+        const resolvedRestoreKeys = restoreKeys || [];
         const installDir = await io.which("cargo", true);
         const paths = (bins || [crate]).map((bin) =>
             path.join(path.dirname(installDir), bin)
         );
-        const programKey = crate + "-" + version + "-" + primaryKey;
-        const programRestoreKeys = restoreKeys.map(
-            (key) => crate + "-" + version + "-" + key
+        const lockedSuffix = locked ? "-locked" : "";
+        const programKey = crate + "-" + version + lockedSuffix + "-" + primaryKey;
+        const programRestoreKeys = resolvedRestoreKeys.map(
+            (key) => crate + "-" + version + lockedSuffix + "-" + key
         );
         const cacheKey = await cache.restoreCache(
             paths,
@@ -54,7 +64,7 @@ async function installCached(
             core.info(`Using cached \`${crate}\` with version ${version}`);
             return crate;
         } else {
-            const res = await install(cargo, crate, bins, version);
+            const res = await install(cargo, crate, bins, version, locked);
             try {
                 core.info(`Caching \`${crate}\` with key ${programKey}`);
                 await cache.saveCache(paths, programKey);
@@ -70,7 +80,7 @@ async function installCached(
             return res;
         }
     } else {
-        return await install(cargo, crate, bins, version);
+        return await install(cargo, crate, bins, version, locked);
     }
 }
 
@@ -78,12 +88,16 @@ async function install(
     cargo: Cargo,
     crate: string,
     bins?: string[],
-    version?: string
+    version?: string,
+    locked?: boolean
 ): Promise<string> {
     const args = ["install"];
     if (version && version != "latest") {
         args.push("--version");
         args.push(version);
+    }
+    if (locked) {
+        args.push("--locked");
     }
     if (bins) {
         bins.forEach((bin) => {
@@ -149,6 +163,7 @@ async function main(): Promise<void> {
 
         await run(actionInput.crate, actionInput.version, {
             useCache: actionInput.useCache,
+            locked: actionInput.locked,
             bins: actionInput.bins,
         });
     } catch (error) {

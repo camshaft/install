@@ -93,3 +93,5 @@ typings/
 # CI build stuff
 ci/venv
 ci/build
+.npmrc.bak
+package.json.bak
