@@ -13,6 +13,12 @@ interface Options {
     bins?: string[];
 }
 
+interface InstallCachedOptions {
+    bins?: string[];
+    restoreKeys?: string[];
+    locked: boolean;
+}
+
 export async function run(
     crate: string,
     version: string,
@@ -21,31 +27,33 @@ export async function run(
     core.info(`Installing ${crate} with cargo`);
     const cargo = await Cargo.get();
     const key = options.useCache ? await getRustKey() : "";
-    const bins = options.bins;
-    await installCached(cargo, crate, bins, version, key, undefined, options.locked);
+    await installCached(cargo, crate, version, key, {
+        bins: options.bins,
+        locked: options.locked,
+    });
 }
 
 async function installCached(
     cargo: Cargo,
     crate: string,
-    bins?: string[],
     version?: string,
     primaryKey?: string,
-    restoreKeys?: string[],
-    locked?: boolean
+    options: InstallCachedOptions = { locked: false }
 ): Promise<string> {
     if (version == "latest") {
         version = await resolveVersion(crate);
     }
+    const { bins, restoreKeys, locked } = options;
     if (primaryKey) {
-        restoreKeys = restoreKeys || [];
+        const resolvedRestoreKeys = restoreKeys || [];
         const installDir = await io.which("cargo", true);
         const paths = (bins || [crate]).map((bin) =>
             path.join(path.dirname(installDir), bin)
         );
-        const programKey = crate + "-" + version + "-" + primaryKey;
-        const programRestoreKeys = restoreKeys.map(
-            (key) => crate + "-" + version + "-" + key
+        const lockedSuffix = locked ? "-locked" : "";
+        const programKey = crate + "-" + version + lockedSuffix + "-" + primaryKey;
+        const programRestoreKeys = resolvedRestoreKeys.map(
+            (key) => crate + "-" + version + lockedSuffix + "-" + key
         );
         const cacheKey = await cache.restoreCache(
             paths,

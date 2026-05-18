@@ -10,6 +10,7 @@ describe("actions-rs/install/input", () => {
         for (const key in testEnvVars)
             process.env[key] = testEnvVars[key as keyof typeof testEnvVars];
         delete process.env['INPUT_LOCKED'];
+        delete process.env['INPUT_BINS'];
     });
 
     it("Parses action input into install input", () => {
@@ -33,10 +34,10 @@ describe("actions-rs/install/input", () => {
         expect(result.bins).toStrictEqual(['foo', 'bar']);
     });
 
-    it("Defaults locked to true", () => {
+    it("Defaults locked to false", () => {
         const result = input.get();
 
-        expect(result.locked).toBe(true);
+        expect(result.locked).toBe(false);
     });
 
     it("Parses locked=true correctly", () => {

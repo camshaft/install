@@ -17,7 +17,7 @@ export function get(): Input {
     const crate = input.getInput("crate", { required: true });
     const version = input.getInput("version", { required: true });
     const useCache = input.getInputBool("use-cache") != false;
-    const locked = input.getInputBool("locked") != false;
+    const locked = input.getInputBool("locked") == true;
     const bins = splitBins(input.getInput("bins"));
 
     return {

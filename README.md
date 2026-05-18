@@ -67,6 +67,8 @@ jobs:
 | ---------------- | :------: | ------------------------------------------------ | ------ | --------|
 | `crate`          | ✓        | Binary crate name                                | string |         |
 | `version`        |          | Crate version to install                         | string | latest  |
+| `use-cache`      |          | Store installed binary in the GitHub Actions cache | bool | true    |
+| `locked`         |          | Pass `--locked` to `cargo install` (fails if crate has no up-to-date `Cargo.lock`) | bool | false |
 | `use-tool-cache` |          | Use pre-compiled crates to speed-up installation | bool   | false   |
 
 ## Tool cache
