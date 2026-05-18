@@ -16,6 +16,10 @@ inputs:
     description: Store installed binary in the GitHub Actions cache
     required: false
     default: 'true'
+  locked:
+    description: Pass --locked to cargo install, requiring Cargo.lock to be up-to-date
+    required: false
+    default: 'true'
 
 runs:
   using: 'node12'

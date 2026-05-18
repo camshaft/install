@@ -9,6 +9,7 @@ import * as input from "./input";
 
 interface Options {
     useCache: boolean;
+    locked: boolean;
     bins?: string[];
 }
 
@@ -21,7 +22,7 @@ export async function run(
     const cargo = await Cargo.get();
     const key = options.useCache ? await getRustKey() : "";
     const bins = options.bins;
-    await installCached(cargo, crate, bins, version, key);
+    await installCached(cargo, crate, bins, version, key, undefined, options.locked);
 }
 
 async function installCached(
@@ -30,7 +31,8 @@ async function installCached(
     bins?: string[],
     version?: string,
     primaryKey?: string,
-    restoreKeys?: string[]
+    restoreKeys?: string[],
+    locked?: boolean
 ): Promise<string> {
     if (version == "latest") {
         version = await resolveVersion(crate);
@@ -54,7 +56,7 @@ async function installCached(
             core.info(`Using cached \`${crate}\` with version ${version}`);
             return crate;
         } else {
-            const res = await install(cargo, crate, bins, version);
+            const res = await install(cargo, crate, bins, version, locked);
             try {
                 core.info(`Caching \`${crate}\` with key ${programKey}`);
                 await cache.saveCache(paths, programKey);
@@ -70,7 +72,7 @@ async function installCached(
             return res;
         }
     } else {
-        return await install(cargo, crate, bins, version);
+        return await install(cargo, crate, bins, version, locked);
     }
 }
 
@@ -78,12 +80,16 @@ async function install(
     cargo: Cargo,
     crate: string,
     bins?: string[],
-    version?: string
+    version?: string,
+    locked?: boolean
 ): Promise<string> {
     const args = ["install"];
     if (version && version != "latest") {
         args.push("--version");
         args.push(version);
+    }
+    if (locked) {
+        args.push("--locked");
     }
     if (bins) {
         bins.forEach((bin) => {
@@ -149,6 +155,7 @@ async function main(): Promise<void> {
 
         await run(actionInput.crate, actionInput.version, {
             useCache: actionInput.useCache,
+            locked: actionInput.locked,
             bins: actionInput.bins,
         });
     } catch (error) {
